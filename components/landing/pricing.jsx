@@ -3,19 +3,38 @@
 import { useIntersectionObserver } from "@/hooks/use-landing-hooks";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { useAuth } from "@clerk/nextjs";
 
 const PricingCard = ({
+    id,
     plan,
     price,
     features,
+    planId,
     featured = false,
     buttonText,
 }) => {
     const [ref, isVisible] = useIntersectionObserver();
     const [isHovered, setIsHovered] = useState(false);
+    const { has } = useAuth();
 
-    const handleClick = () => {
-        console.log(`${plan} plan selected`);
+    // Check if user has this specific plan
+    const isCurrentPlan = id ? has?.({ plan: id }) : false;
+
+    const handlePopup = async () => {
+        if (isCurrentPlan) return;
+
+        try {
+            if (window.Clerk && window.Clerk.__internal_openCheckout) {
+                await window.Clerk.__internal_openCheckout({
+                    planId: planId,
+                    planPeriod: "month",
+                    subscriberType: "user",
+                });
+            }
+        } catch (error) {
+            console.error("Checkout Error:", error);
+        }
     };
 
     return (
@@ -67,9 +86,10 @@ const PricingCard = ({
                     variant={featured ? "primary" : "glass"}
                     size="xl"
                     className="w-full"
-                    onClick={handleClick}
+                    onClick={handlePopup}
+                    disabled={isCurrentPlan || !planId}
                 >
-                    {buttonText}
+                    {isCurrentPlan ? "Current Plan" : buttonText}
                 </Button>
             </div>
         </div>
@@ -79,6 +99,7 @@ const PricingCard = ({
 export const PricingSection = () => {
     const plans = [
         {
+            id: "free_user",
             plan: "Free",
             price: 0,
             features: [
@@ -91,18 +112,20 @@ export const PricingSection = () => {
             buttonText: "Get Started Free",
         },
         {
+            id: "pro",
             plan: "Pro",
             price: 12,
             features: [
-                "Unlimited projects",
-                "Unlimited exports",
+                "Unlimited Projects",
+                "Unlimited Exports",
                 "All Editing Tools",
                 "AI Background Remover",
                 "AI Image Extender",
-                "AI Retouch, Upscaler and more",
+                "AI Retouch, Upscaler And More",
             ],
             featured: true,
-            buttonText: "Upgrade to Pro",
+            planId: process.env.NEXT_PUBLIC_CLERK_PRO_PLAN_ID,
+            buttonText: "Upgrade To Pro",
         },
     ];
 
