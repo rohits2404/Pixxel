@@ -1,6 +1,9 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Header } from "@/components/header";
+import { FloatingShapes } from "@/components/floating-shapes";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +25,12 @@ export default function RootLayout({ children }) {
                     enableSystem
                     disableTransitionOnChange
                 >
-                    {children}
+                    <Header />
+                    <main className="bg-slate-900 min-h-screen text-white overflow-x-hidden">
+                        <FloatingShapes />
+                        <Toaster richColors />
+                        {children}
+                    </main>
                 </ThemeProvider>
             </body>
         </html>
