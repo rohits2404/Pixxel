@@ -21,7 +21,7 @@ export default defineSchema({
     projects: defineTable({
         title: v.string(),
         userId: v.id("users"),
-        canvasState: v.any(),
+        canvasState: v.optional(v.any()),
         width: v.number(),
         height: v.number(),
         originalImageUrl: v.optional(v.string()),

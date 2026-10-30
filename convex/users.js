@@ -1,14 +1,31 @@
 import { mutation, query } from "./_generated/server";
 
+// Shared helper: import this from other Convex files
+export async function getCurrentUserOrThrow(ctx) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+        throw new Error("Not Authenticated");
+    }
+
+    const user = await ctx.db
+        .query("users")
+        .withIndex("by_token", (q) =>
+            q.eq("tokenIdentifier", identity.tokenIdentifier),
+        )
+        .unique();
+
+    if (!user) {
+        throw new Error("User Not Found");
+    }
+
+    return user;
+}
+
 export const store = mutation({
     args: {},
     handler: async (ctx) => {
         const identity = await ctx.auth.getUserIdentity();
-
-        if (!identity) {
-            throw new Error("Not Authenticated");
-        }
-
+        if (!identity) throw new Error("Not Authenticated");
         if (!identity.email) {
             throw new Error(
                 "Email Missing From Clerk Identity. Check Clerk Session Token Claims.",
@@ -35,7 +52,6 @@ export const store = mutation({
                 ...userData,
                 lastActiveAt: Date.now(),
             });
-
             return existingUser._id;
         }
 
@@ -52,23 +68,5 @@ export const store = mutation({
 });
 
 export const getCurrentUser = query({
-    handler: async (ctx) => {
-        const identity = await ctx.auth.getUserIdentity();
-        if (!identity) {
-            throw new Error("Not Authenticated");
-        }
-
-        const user = await ctx.db
-            .query("users")
-            .withIndex("by_token", (q) =>
-                q.eq("tokenIdentifier", identity.tokenIdentifier),
-            )
-            .unique();
-
-        if (!user) {
-            throw new Error("User Not Found");
-        }
-
-        return user;
-    },
+    handler: async (ctx) => getCurrentUserOrThrow(ctx),
 });
